@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+<title>Getting Started</title>
+</head>
+<body>
+
+<form id="search" name="search">
+  <input type="search" id="query" name="query" value="foo2">
+  <button>search</button>
+</form>
+
+<ol id="results"></ol>
+
+<script type="module">
+
+const resultsContainer = document.getElementById('results');
+
+const printResults = (results) => {
+  for (const result of results) {
+    const node = document.createElement('li');
+    node.appendChild(document.createTextNode(result));
+    resultsContainer.appendChild(node);
+  }
+};
+
+const search = async (query) => {
+  const url = '/search/' + window.encodeURIComponent(query);
+  const response = await window.fetch(url).then(res => res.json());
+  if (response.final) {
+    printResults(response.results);
+  } else {
+    const searchId = response.searchId;
+    const listener = new EventSource('/listen/' + searchId);
+    listener.onerror = () => {
+      console.log('listener error');
+    };
+    listener.onopen = () => {
+      console.log('listener open');
+    };
+    listener.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      console.log('listener message', msg);
+      if (msg.close) {
+        listener.close();
+      }
+    };
+  }
+}
+
+
+document.getElementById('search').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const query = event.target.elements.query.value;
+  if (!query) {
+    alert('No query');
+    return;
+  }
+  resultsContainer.innerHTML = '';
+  search(query);
+});
+
+window.setTimeout(() => {
+  document.querySelector('button').click();
+}, 500);
+
+
+</script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "devDependencies": {},
+  "dependencies": {
+    "express": "^4.16.2",
+    "request": "^2.83.0",
+    "server-sent-events": "^1.0.1"
+  }
+}
