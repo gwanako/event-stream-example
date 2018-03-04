@@ -1,5 +1,6 @@
 import express from 'express';
 import sse from 'server-sent-events';
+import db from './dbClient.mjs';
 
 // http://bayn.es/real-time-web-applications-with-server-sent-events-pt-1/
 // https://github.com/zacbarton/node-server-sent-events/blob/master/index.js
