@@ -2,12 +2,16 @@
 <html>
 <head>
 <title>Getting Started</title>
+<style>
+.hidden { display: none }
+</style>
 </head>
 <body>
 
 <form id="search" name="search">
   <input type="search" id="query" name="query" value="foo2">
   <button>search</button>
+  <span id="loading">Loading...</span>
 </form>
 
 <ol id="results"></ol>
@@ -15,8 +19,19 @@
 <script type="module">
 
 const resultsContainer = document.getElementById('results');
+const loadingIndicator = document.getElementById('loading');
 
-const printResults = (results) => {
+let listener = null;
+
+const toggleLoading = (toggle = true) => {
+  loadingIndicator.classList.toggle('hidden', toggle)
+};
+
+const clearResults = () => {
+  resultsContainer.innerHTML = '';
+};
+
+const appendResults = (results) => {
   for (const result of results) {
     const node = document.createElement('li');
     node.appendChild(document.createTextNode(result));
@@ -24,30 +39,40 @@ const printResults = (results) => {
   }
 };
 
+const listen = (query) => {
+  const url = '/results/' + window.encodeURIComponent(query);
+  listener = new EventSource(url);
+  listener.onerror = (err) => {
+    console.log('listener error');
+  };
+  listener.onopen = () => {
+    console.log('listener open');
+  };
+  listener.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    console.log('listener message', msg);
+    if (msg.results) {
+      appendResults(msg.results);
+    }
+    if (msg.final) {
+      toggleLoading(false);
+    }
+    if (msg.close) {
+      listener.close();
+      listener = null;
+    }
+  };
+};
+
 const search = async (query) => {
   const url = '/search/' + window.encodeURIComponent(query);
-  const response = await window.fetch(url).then(res => res.json());
-  if (response.final) {
-    printResults(response.results);
+  const res = await window.fetch(url).then(res => res.json());
+  if (res.final) {
+    printResults(res.results);
   } else {
-    const searchId = response.searchId;
-    const listener = new EventSource('/listen/' + searchId);
-    listener.onerror = () => {
-      console.log('listener error');
-    };
-    listener.onopen = () => {
-      console.log('listener open');
-    };
-    listener.onmessage = (event) => {
-      const msg = JSON.parse(event.data);
-      console.log('listener message', msg);
-      if (msg.close) {
-        listener.close();
-      }
-    };
+    listen(query);
   }
 }
-
 
 document.getElementById('search').addEventListener('submit', (event) => {
   event.preventDefault();
@@ -56,13 +81,18 @@ document.getElementById('search').addEventListener('submit', (event) => {
     alert('No query');
     return;
   }
-  resultsContainer.innerHTML = '';
+  if (listener) {
+    listener.close();
+    listener = null;
+  }
+  toggleLoading(true);
+  clearResults();
   search(query);
 });
 
 window.setTimeout(() => {
   document.querySelector('button').click();
-}, 500);
+}, 1000);
 
 
 </script>

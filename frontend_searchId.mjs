@@ -11,45 +11,34 @@ const app = express();
 
 app.use(express.static('.'));
 
+let nextSearchId = 1;
 const searches = {};
-
-const sendResults = (res, results) => {
-  if (results.final) {
-    res.setHeader('Cache-Control', 'public');
-    res.setHeader('Cache-Control', 'max-age=600');
-  } else {
-    res.setHeader('Cache-Control', 'no-cache');
-  }
-  sender(results);
-};
-
-// TODO: send time of last response in request, to avoid sending same twice (only partial solution to the problem)
 
 app.get('/search/:query', (req, res) => {
   const query = req.params.query;
-  const results = searches[query];
-  if (results) {
-    sendResults(res, results);
-    return;
+  if (query === 'foo') {
+    res.send({
+      final: true,
+      results: [
+        'foo',
+        'bar',
+        'baz',
+      ],
+    });
+  } else {
+    const searchId = nextSearchId++;
+    res.send({
+      final: false,
+      searchId: searchId,
+    });
   }
-  db.get(query).then((results) => {
-    if (results) {
-      searches[query] = results;
-      sendResults(res, results);
-    } else {
-      // TODO: begin search
-      res.send({
-        wait: true,
-      });
-    }
-  });
 });
 
 const sseJson = (data) => 'data: ' + JSON.stringify(data) + '\n\n';
 
-app.get('/results/:query', sse, (req, res) => {
-  const query = req.params.query;
-  console.log('listen', query);
+app.get('/listen/:searchId', sse, (req, res) => {
+  const searchId = req.params.searchId;
+  console.log('listen', searchId);
   res.sse(sseJson({
     foo: 'bar',
   }));

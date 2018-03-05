@@ -2,14 +2,14 @@ import express from 'express';
 
 const app = express();
 
-const db = {};
+const data = {};
 
 app.get('/get/:key', (req, res) => {
-  res.send(db[req.params.key]);
+  res.send(data[req.params.key]);
 });
 
-app.post('/put/:key', (req, res) => {
-  db[req.params.key] = req.body;
+app.post('/set/:key', (req, res) => {
+  data[req.params.key] = req.body;
   res.send();
 });
 

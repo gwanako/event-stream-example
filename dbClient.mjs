@@ -11,13 +11,13 @@ export async function get(key) {
   });
 };
 
-export async function put(key, value) {
+export async function set(key, value) {
   return new Promise((resolve, reject) => {
-    request.post(url + '/put/' + key, { json: value }, (err, res, body) => {
+    request.post(url + '/set/' + key, { json: value }, (err, res, body) => {
       if (err) reject(err);
       else resolve(body);
     });
   });
 };
 
-export default { get, put };
+export default { get, set };
